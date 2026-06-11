@@ -885,7 +885,7 @@
       <div class="messages" id="messages">
         <div class="welcome" id="welcome">
           <div class="avatar">🎓</div>
-          <h3>你好，我是雪峰 Agent</h3>
+          <h3 id="welcomeTitle">你好，我是雪峰 Agent</h3>
           <p>一个干了十几年高考志愿规划的老炮。直接说你的情况，我帮你分析。别客气，有啥问啥。</p>
           <div class="quick-actions">
             <button class="quick-btn" onclick="sendQuick('湖北物理类580分，想学计算机')">湖北 580分 物理</button>
@@ -919,7 +919,7 @@
     // ── Config ─────────────────────────────
     // 部署时修改这里：填入后端 API 地址（ngrok 地址或服务器地址）
     // 本地开发留空即可，会自动用相对路径
-    const API_BASE = 'https://yiddish-humvee-tightrope.ngrok-free.dev';
+    const API_BASE = '';
 
     // ── State ──────────────────────────────
     let sessionId = localStorage.getItem('sessionId') || generateId();
@@ -932,6 +932,11 @@
     function checkLogin() {
       if (userName) {
         document.getElementById('loginOverlay').classList.add('hidden');
+        // 更新欢迎语
+        const welcomeTitle = document.getElementById('welcomeTitle');
+        if (welcomeTitle) {
+          welcomeTitle.textContent = `你好，${userName}，我是雪峰 Agent`;
+        }
         document.getElementById('userInput').focus();
       }
     }
@@ -946,6 +951,11 @@
       userName = name;
       localStorage.setItem('userName', name);
       document.getElementById('loginOverlay').classList.add('hidden');
+      // 更新欢迎语
+      const welcomeTitle = document.getElementById('welcomeTitle');
+      if (welcomeTitle) {
+        welcomeTitle.textContent = `你好，${userName}，我是雪峰 Agent`;
+      }
       document.getElementById('userInput').focus();
     }
 
@@ -1193,10 +1203,11 @@
       renderSlots();
 
       const container = document.getElementById('messages');
+      const welcomeName = userName ? `，${userName}` : '';
       container.innerHTML = `
       <div class="welcome" id="welcome">
         <div class="avatar">🎓</div>
-        <h3>你好，我是雪峰 Agent</h3>
+        <h3>你好${welcomeName}，我是雪峰 Agent</h3>
         <p>一个干了十几年高考志愿规划的老炮。直接说你的情况，我帮你分析。别客气，有啥问啥。</p>
         <div class="quick-actions">
           <button class="quick-btn" onclick="sendQuick('湖北物理类580分，想学计算机')">湖北 580分 物理</button>
