@@ -992,6 +992,37 @@
       document.getElementById('statusDot').style.background = 'var(--red)';
     });
 
+    // 加载历史对话
+    async function loadHistory() {
+      try {
+        const resp = await fetch(API_BASE + '/api/session/' + sessionId, { headers: ngrokHeaders });
+        const data = await resp.json();
+        if (data.conversation && data.conversation.length > 0) {
+          // 恢复消息
+          for (const msg of data.conversation) {
+            if (msg.role === 'user') {
+              addMessage('user', msg.content);
+            } else if (msg.role === 'assistant') {
+              addMessage('bot', msg.content);
+            }
+          }
+        }
+        // 恢复槽位
+        if (data.slots) {
+          slots = data.slots;
+          renderSlots();
+        }
+        // 恢复用户名
+        if (data.user_name && !userName) {
+          userName = data.user_name;
+          localStorage.setItem('userName', userName);
+        }
+      } catch(e) {
+        // 服务端没有历史数据，忽略
+      }
+    }
+    loadHistory();
+
     // Init slots display
     for (const [key, def] of Object.entries(SLOT_DEFS)) {
       slots[key] = { filled: false, value: '' };
@@ -1046,10 +1077,11 @@
         ? '<div class="msg-avatar">🎓</div>'
         : '<div class="msg-avatar">我</div>';
 
+      const rendered = role === 'bot' ? renderMarkdown(text) : escapeHtml(text);
       div.innerHTML = `
       ${avatar}
       <div class="msg-content">
-        <div class="msg-bubble">${escapeHtml(text)}</div>
+        <div class="msg-bubble">${rendered}</div>
         <div class="msg-time">${timeStr()}</div>
       </div>
     `;
@@ -1093,6 +1125,32 @@
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    function stripXml(text) {
+      // 去掉所有 XML/HTML 标签：<xxx> / <xxx=yyy> / </xxx> / <xxx ...> / <xxx/>
+      text = text.replace(/<[^>]*>/g, '');
+      return text;
+    }
+
+    function renderMarkdown(text) {
+      text = stripXml(text);
+      let html = escapeHtml(text);
+      // 加粗 **text**
+      html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+      // 标题
+      html = html.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+      html = html.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+      html = html.replace(/^# (.+)$/gm, '<h2>$1</h2>');
+      // 无序列表
+      html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
+      // 有序列表
+      html = html.replace(/^\d+[\.\u3001] (.+)$/gm, '<li>$1</li>');
+      // 连续两个换行 → 段落
+      html = html.replace(/\n\n/g, '<br><br>');
+      // 单换行
+      html = html.replace(/\n/g, '<br>');
+      return html;
     }
 
     function scrollToBottom() {
@@ -1150,7 +1208,7 @@
                 }
               } else if (data.type === 'token') {
                 fullText += data.content;
-                bubble.textContent = fullText;
+                bubble.innerHTML = renderMarkdown(fullText) || '正在思考...';
                 scrollToBottom();
               } else if (data.type === 'done') {
                 if (data.slots) {
@@ -1162,9 +1220,9 @@
           }
         }
 
-        // Clean up formatting
+        // Render final markdown
         if (fullText) {
-          bubble.textContent = fullText;
+          bubble.innerHTML = renderMarkdown(fullText);
         }
 
       } catch (err) {
