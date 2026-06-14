@@ -996,7 +996,7 @@
     const ngrokHeaders = API_BASE.includes('ngrok') ? { 'ngrok-skip-browser-warning': 'true' } : {};
     fetch(API_BASE + '/api/health', { headers: ngrokHeaders }).then(r => r.json()).then(d => {
       document.getElementById('modelInfo').textContent = `模型: ${d.model}`;
-      document.getElementById('statusText').textContent = `就绪 · ${d.model}`;
+      document.getElementById('statusText').textContent = `就绪 · `;
     }).catch(() => {
       document.getElementById('statusText').textContent = '连接失败';
       document.getElementById('statusDot').style.background = 'var(--red)';
